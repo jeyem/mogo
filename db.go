@@ -4,12 +4,16 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/fatih/structs"
+
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
 	// ErrorURI raise for parsing uri error
-	ErrorURI = errors.New("mongo: could not parse URI")
+	ErrorURI     = errors.New("mogo: could not parse URI")
+	ErrorModelID = errors.New("mogo: model id type error")
 )
 
 // DB main connection struct
@@ -52,7 +56,34 @@ func (db *DB) SetIndex(model interface{}, index mgo.Index) error {
 	return col.EnsureIndex(index)
 }
 
-// --------------------- inpackage ---------------
+func (db *DB) Where(q bson.M) *Query {
+	query := new(Query)
+	query.db = db
+	query.q = append(query.q, q)
+	return query
+}
+
+func (db *DB) Get(model, id interface{}) error {
+	col := db.Collection(model)
+	return col.FindId(id).One(model)
+}
+
+func (db *DB) Create(model interface{}) error {
+	col := db.Collection(model)
+	return col.Insert(model)
+}
+
+func (db *DB) Update(model interface{}, fieldsUpdate bson.M) error {
+	col := db.Collection(model)
+	id, err := getID(model)
+	if err != nil {
+		return err
+	}
+	query := bson.M{"_id": id}
+	return col.Update(query, fieldsUpdate)
+}
+
+// --------------------- in package ---------------
 func parseURI(uri string) (string, string, error) {
 	var url, db string
 	splited := strings.Split(uri, "/")
@@ -61,4 +92,24 @@ func parseURI(uri string) (string, string, error) {
 	}
 	url, db = splited[0], splited[1]
 	return url, db, nil
+}
+
+func getID(model interface{}) (bson.ObjectId, error) {
+	m := structs.Map(model)
+	var (
+		idInterface interface{}
+		id          bson.ObjectId
+		ok          bool
+	)
+	if val, ok := m["Id"]; ok {
+		idInterface = val
+	}
+	if val, ok := m["ID"]; ok {
+		idInterface = val
+	}
+	id, ok = idInterface.(bson.ObjectId)
+	if !ok {
+		return id, ErrorModelID
+	}
+	return id, nil
 }
