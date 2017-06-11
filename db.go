@@ -40,9 +40,19 @@ func Conn(uri string) (*DB, error) {
 	return database, nil
 }
 
+// Close db session
+func (db *DB) Close() {
+	db.session.Close()
+}
+
 // Collection return mgo collection from model
 func (db *DB) Collection(model interface{}) *mgo.Collection {
-	return db.database.C(colName(model))
+	col := db.database.C(colName(model))
+	indexes := loadIndex(model)
+	for i := range indexes {
+		col.EnsureIndex(indexes[i])
+	}
+	return col
 }
 
 // DropCollection drop a collection
@@ -70,6 +80,7 @@ func (db *DB) Get(model, id interface{}) error {
 
 func (db *DB) Create(model interface{}) error {
 	col := db.Collection(model)
+	setID(model)
 	return col.Insert(model)
 }
 
@@ -80,7 +91,10 @@ func (db *DB) Update(model interface{}, fieldsUpdate bson.M) error {
 		return err
 	}
 	query := bson.M{"_id": id}
-	return col.Update(query, fieldsUpdate)
+	if err := col.Update(query, fieldsUpdate); err != nil {
+		return err
+	}
+	return db.Get(model, id)
 }
 
 // --------------------- in package ---------------
@@ -92,6 +106,23 @@ func parseURI(uri string) (string, string, error) {
 	}
 	url, db = splited[0], splited[1]
 	return url, db, nil
+}
+
+func setID(model interface{}) {
+	m := structs.Map(model)
+	var keyID string
+	if _, ok := m["Id"]; ok {
+		m["Id"] = bson.NewObjectId()
+		keyID = "Id"
+	}
+	if _, ok := m["ID"]; ok {
+		m["ID"] = bson.NewObjectId()
+		keyID = "ID"
+	}
+	s := structs.New(model)
+	field := s.Field(keyID)
+	field.Set(m[keyID])
+
 }
 
 func getID(model interface{}) (bson.ObjectId, error) {

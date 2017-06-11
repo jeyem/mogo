@@ -1,12 +1,16 @@
 package mogo
 
 import (
+	"company/bab/utils/character"
 	"fmt"
 	"strings"
+
+	"gopkg.in/mgo.v2"
 )
 
 type loader interface {
 	CollectionName() string
+	Meta() []mgo.Index
 }
 
 func colName(model interface{}) string {
@@ -19,7 +23,14 @@ func colName(model interface{}) string {
 	tmp = strings.Replace(tmp, "[", "", -1)
 	ts := strings.Split(tmp, ".")
 	if len(ts) < 2 {
-		return tmp
+		return character.CamelToSnake(tmp)
 	}
-	return ts[1]
+	return character.CamelToSnake(ts[1])
+}
+
+func loadIndex(model interface{}) []mgo.Index {
+	if c, ok := model.(loader); ok {
+		return c.Meta()
+	}
+	return []mgo.Index{}
 }

@@ -32,7 +32,8 @@ func (q *Query) Sort(s string) *Query {
 
 func (q *Query) Find(model interface{}) error {
 	if len(q.q) < 2 {
-		return q.result(model, q.q[0])
+		err := q.result(model, q.q[0])
+		return err
 	}
 	query := bson.M{"$or": q.q}
 	return q.result(model, query)
