@@ -1,7 +1,6 @@
 package mogo
 
 import (
-	"fmt"
 	"reflect"
 
 	"gopkg.in/mgo.v2"
@@ -52,7 +51,6 @@ func (q *Query) Limit(limit int) *Query {
 
 func (q *Query) Find(model interface{}) error {
 	query := q.parseQuery()
-	fmt.Println(query, "-------")
 	q.loadQuerySet(model, query)
 	return q.result(model)
 }
