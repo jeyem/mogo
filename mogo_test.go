@@ -76,11 +76,17 @@ func TestUpdateCollection(t *testing.T) {
 		return
 	}
 	field1To := "test35"
-	if err := db.Update(testData, bson.M{"test_field_1": field1To}); err != nil {
+	testData.TestField1 = field1To
+	if err := db.Update(testData); err != nil {
 		t.Error(err)
 		return
 	}
-	if testData.TestField1 != field1To {
+	newtestData := new(TestCollection)
+	if err := db.Get(newtestData, testData.ID); err != nil {
+		t.Error(err)
+		return
+	}
+	if newtestData.TestField1 != field1To {
 		t.Error("collection not updated")
 		return
 	}

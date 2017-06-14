@@ -84,13 +84,14 @@ func (db *DB) Create(model interface{}) error {
 	return col.Insert(model)
 }
 
-func (db *DB) Update(model interface{}, fieldsUpdate bson.M) error {
+func (db *DB) Update(model interface{}) error {
 	col := db.Collection(model)
 	id, err := getID(model)
 	if err != nil {
 		return err
 	}
 	query := bson.M{"_id": id}
+	fieldsUpdate := parseBson(model)
 	if err := col.Update(query, fieldsUpdate); err != nil {
 		return err
 	}
@@ -98,6 +99,14 @@ func (db *DB) Update(model interface{}, fieldsUpdate bson.M) error {
 }
 
 // --------------------- in package ---------------
+
+func parseBson(model interface{}) bson.M {
+	b, _ := bson.Marshal(model)
+	var body bson.M
+	bson.Unmarshal(b, &body)
+	return body
+}
+
 func parseURI(uri string) (string, string, error) {
 	var url, db string
 	splited := strings.Split(uri, "/")
