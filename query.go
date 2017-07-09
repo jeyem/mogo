@@ -61,6 +61,12 @@ func (q *Query) Count(model interface{}) (int, error) {
 	return q.querySet.Count()
 }
 
+func (q *Query) Q(model interface{}) *mgo.Query {
+	query := q.parseQuery()
+	q.loadQuerySet(model, query)
+	return q.querySet
+}
+
 // ----------------------- in package -------------------
 
 func (q *Query) parseQuery() bson.M {
