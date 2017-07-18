@@ -1,3 +1,4 @@
+// Package mogo provides a faster usage of mongo with mgo behind
 package mogo
 
 import (
@@ -12,7 +13,9 @@ import (
 
 var (
 	// ErrorURI raise for parsing uri error
-	ErrorURI     = errors.New("mogo: could not parse URI")
+	ErrorURI = errors.New("mogo: could not parse URI")
+	// ErrorModelID passing a model for update
+	// if could not find Id or ID with bson.ObjectID will raise
 	ErrorModelID = errors.New("mogo: model id type error")
 )
 
@@ -61,11 +64,12 @@ func (db *DB) DropCollection(model interface{}) error {
 	return col.DropCollection()
 }
 
-func (db *DB) SetIndex(model interface{}, index mgo.Index) error {
-	col := db.Collection(model)
-	return col.EnsureIndex(index)
-}
+// func (db *DB) SetIndex(model interface{}, index mgo.Index) error {
+// 	col := db.Collection(model)
+// 	return col.EnsureIndex(index)
+// }
 
+// Where start generating query
 func (db *DB) Where(q bson.M) *Query {
 	query := new(Query)
 	query.db = db
@@ -73,17 +77,23 @@ func (db *DB) Where(q bson.M) *Query {
 	return query
 }
 
+// Get a model with id
 func (db *DB) Get(model, id interface{}) error {
+	if val, ok := id.(string); ok {
+		id = bson.ObjectIdHex(val)
+	}
 	col := db.Collection(model)
 	return col.FindId(id).One(model)
 }
 
+// Create insert a Document to DB
 func (db *DB) Create(model interface{}) error {
 	col := db.Collection(model)
 	setID(model)
 	return col.Insert(model)
 }
 
+// Update a Document
 func (db *DB) Update(model interface{}) error {
 	col := db.Collection(model)
 	id, err := getID(model)

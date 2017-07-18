@@ -7,6 +7,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Query chaining cache
 type Query struct {
 	db                *DB
 	q                 []bson.M
@@ -19,22 +20,26 @@ type Query struct {
 	limit             int
 }
 
+// Select fields selection
 func (q *Query) Select(s bson.M) *Query {
 	q.selectCulomn = s
 	q.selectedOneColumn = true
 	return q
 }
 
+// Or for $or you can use this for more clear
 func (q *Query) Or(s bson.M) *Query {
 	q.q = append(q.q, s)
 	return q
 }
 
+// Sort the documents result
 func (q *Query) Sort(s string) *Query {
 	q.sort = s
 	return q
 }
 
+// Paginate skip and limit pagination
 func (q *Query) Paginate(limit, page int) *Query {
 	q.paginated = true
 	q.limit = limit
@@ -42,6 +47,7 @@ func (q *Query) Paginate(limit, page int) *Query {
 	return q
 }
 
+// Limit the documents result
 func (q *Query) Limit(limit int) *Query {
 	q.paginated = true
 	q.limit = limit
@@ -49,18 +55,21 @@ func (q *Query) Limit(limit int) *Query {
 	return q
 }
 
+// Find the result on type
 func (q *Query) Find(model interface{}) error {
 	query := q.parseQuery()
 	q.loadQuerySet(model, query)
 	return q.result(model)
 }
 
+// Count a collection
 func (q *Query) Count(model interface{}) (int, error) {
 	query := q.parseQuery()
 	q.loadQuerySet(model, query)
 	return q.querySet.Count()
 }
 
+// Q use native mgo.Query for advance usage
 func (q *Query) Q(model interface{}) *mgo.Query {
 	query := q.parseQuery()
 	q.loadQuerySet(model, query)
