@@ -22,9 +22,9 @@ type TestCollection struct {
 	Names      []EmbededTest `bson:"names"`
 }
 
-func (TestCollection) CollectionName() string {
-	return "test"
-}
+// func (TestCollection) CollectionName() string {
+// 	return "test"
+// }
 
 func TestConnection(t *testing.T) {
 	db, err := Conn(TestURI)

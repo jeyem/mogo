@@ -1,7 +1,6 @@
 package mogo
 
 import (
-	"company/bab/utils/character"
 	"fmt"
 	"strings"
 
@@ -26,9 +25,9 @@ func colName(model interface{}) string {
 	tmp = strings.Replace(tmp, "[", "", -1)
 	ts := strings.Split(tmp, ".")
 	if len(ts) < 2 {
-		return character.CamelToSnake(tmp)
+		return toSnake(tmp)
 	}
-	return character.CamelToSnake(ts[1])
+	return toSnake(ts[1])
 }
 
 func loadIndex(model interface{}) []mgo.Index {
