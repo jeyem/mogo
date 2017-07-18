@@ -86,7 +86,7 @@ func (db *DB) Get(model, id interface{}) error {
 	return col.FindId(id).One(model)
 }
 
-// Create insert a Document to DB
+// Create a document in DB
 func (db *DB) Create(model interface{}) error {
 	col := db.Collection(model)
 	setID(model)
