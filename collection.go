@@ -8,13 +8,16 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-type loader interface {
+type coller interface {
 	CollectionName() string
+}
+
+type indexer interface {
 	Meta() []mgo.Index
 }
 
 func colName(model interface{}) string {
-	if c, ok := model.(loader); ok {
+	if c, ok := model.(coller); ok {
 		return c.CollectionName()
 	}
 	tmp := fmt.Sprintf("%T", model)
@@ -29,7 +32,7 @@ func colName(model interface{}) string {
 }
 
 func loadIndex(model interface{}) []mgo.Index {
-	if c, ok := model.(loader); ok {
+	if c, ok := model.(indexer); ok {
 		return c.Meta()
 	}
 	return []mgo.Index{}
