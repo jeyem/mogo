@@ -43,7 +43,7 @@ func (q *Query) Sort(s string) *Query {
 func (q *Query) Paginate(limit, page int) *Query {
 	q.paginated = true
 	q.limit = limit
-	q.skip = page * limit
+	q.skip = (page - 1) * limit
 	return q
 }
 

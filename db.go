@@ -50,12 +50,18 @@ func (db *DB) Close() {
 
 // Collection return mgo collection from model
 func (db *DB) Collection(model interface{}) *mgo.Collection {
-	col := db.database.C(colName(model))
-	indexes := loadIndex(model)
-	for i := range indexes {
-		col.EnsureIndex(indexes[i])
+	return db.database.C(colName(model))
+}
+
+// LoadIndexes reinitialize models indexes
+func (db *DB) LoadIndexes(models ...interface{}) {
+	for _, model := range models {
+		col := db.Collection(model)
+		indexes := loadIndex(model)
+		for i := range indexes {
+			col.EnsureIndex(indexes[i])
+		}
 	}
-	return col
 }
 
 // DropCollection drop a collection
