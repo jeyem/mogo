@@ -94,6 +94,10 @@ func (db *DB) Get(model, id interface{}) error {
 
 // Create a document in DB
 func (db *DB) Create(model interface{}) error {
+	_, err := getID(model)
+	if err == nil {
+		return db.Update(model)
+	}
 	col := db.Collection(model)
 	setID(model)
 	return col.Insert(model)
@@ -165,6 +169,9 @@ func getID(model interface{}) (bson.ObjectId, error) {
 	}
 	id, ok = idInterface.(bson.ObjectId)
 	if !ok {
+		return id, ErrorModelID
+	}
+	if !id.Valid() {
 		return id, ErrorModelID
 	}
 	return id, nil
