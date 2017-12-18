@@ -88,14 +88,14 @@ func (q *Query) parseQuery() bson.M {
 func (q *Query) loadQuerySet(model interface{}, query bson.M) {
 	col := q.db.Collection(model)
 	mgoQuery := col.Find(query)
+	if q.sort != "" {
+		mgoQuery = mgoQuery.Sort(q.sort)
+	}
 	if q.selectedOneColumn {
 		mgoQuery = mgoQuery.Select(q.selectCulomn)
 	}
 	if q.paginated {
 		mgoQuery.Skip(q.skip).Limit(q.limit)
-	}
-	if q.sort != "" {
-		mgoQuery = mgoQuery.Sort(q.sort)
 	}
 	q.querySet = mgoQuery
 }
@@ -104,6 +104,7 @@ func (q *Query) result(model interface{}) error {
 	if isSlice(model) {
 		return q.querySet.All(model)
 	}
+	defer q.db.Close()
 	return q.querySet.One(model)
 }
 

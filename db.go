@@ -21,8 +21,8 @@ var (
 
 // DB main connection struct
 type DB struct {
-	session  *mgo.Session
-	database *mgo.Database
+	Session  *mgo.Session
+	Database *mgo.Database
 }
 
 // Conn init db struct with uri -> host:port/db
@@ -36,21 +36,21 @@ func Conn(uri string) (*DB, error) {
 		return nil, err
 	}
 	database := new(DB)
-	database.database = session.DB(db)
+	database.Database = session.DB(db)
 	session.SetSafe(&mgo.Safe{})
 	session.SetMode(mgo.Monotonic, true)
-	database.session = session
+	database.Session = session
 	return database, nil
 }
 
 // Close db session
 func (db *DB) Close() {
-	db.session.Close()
+	db.Session.Close()
 }
 
 // Collection return mgo collection from model
 func (db *DB) Collection(model interface{}) *mgo.Collection {
-	return db.database.C(colName(model))
+	return db.Database.C(colName(model))
 }
 
 // LoadIndexes reinitialize models indexes
@@ -77,9 +77,13 @@ func (db *DB) DropCollection(model interface{}) error {
 
 // Where start generating query
 func (db *DB) Where(q bson.M) *Query {
+	d := new(DB)
+	d.Session = db.Session.Clone()
+	d.Database = db.Database
 	query := new(Query)
-	query.db = db
+	query.db = d
 	query.q = append(query.q, q)
+	// fmt.Println(query)
 	return query
 }
 
@@ -94,10 +98,6 @@ func (db *DB) Get(model, id interface{}) error {
 
 // Create a document in DB
 func (db *DB) Create(model interface{}) error {
-	_, err := getID(model)
-	if err == nil {
-		return db.Update(model)
-	}
 	col := db.Collection(model)
 	setID(model)
 	return col.Insert(model)
