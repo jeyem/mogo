@@ -112,7 +112,7 @@ func (db *DB) Update(model interface{}) error {
 	}
 	query := bson.M{"_id": id}
 	fieldsUpdate := parseBson(model)
-	if err := col.Update(query, fieldsUpdate); err != nil {
+	if err := col.Update(query, bson.M{"$set": fieldsUpdate}); err != nil {
 		return err
 	}
 	return db.Get(model, id)
