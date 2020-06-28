@@ -3,9 +3,9 @@ package mogo
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/fatih/structs"
+	"github.com/globalsign/mgo"
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -26,17 +26,26 @@ type DB struct {
 }
 
 // Conn init db struct with uri -> host:port/db
-func Conn(uri string) (*DB, error) {
-	url, db, err := parseURI(uri)
+func Conn(info *mgo.DialInfo) (*DB, error) {
+	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		return nil, err
 	}
+	database := new(DB)
+	database.Database = session.DB(info.Database)
+	session.SetSafe(&mgo.Safe{})
+	session.SetMode(mgo.Monotonic, true)
+	database.Session = session
+	return database, nil
+}
+
+func ConnByURI(url string) (*DB, error) {
 	session, err := mgo.Dial(url)
 	if err != nil {
 		return nil, err
 	}
 	database := new(DB)
-	database.Database = session.DB(db)
+	database.Database = session.DB(info.Database)
 	session.SetSafe(&mgo.Safe{})
 	session.SetMode(mgo.Monotonic, true)
 	database.Session = session
@@ -51,6 +60,10 @@ func (db *DB) Close() {
 // Collection return mgo collection from model
 func (db *DB) Collection(model interface{}) *mgo.Collection {
 	return db.Database.C(colName(model))
+}
+
+func (db *DB) Stream(model, query interface{}) *mgo.Iter {
+	return db.Collection(model).Find(query).Iter()
 }
 
 // LoadIndexes reinitialize models indexes
@@ -75,8 +88,8 @@ func (db *DB) DropCollection(model interface{}) error {
 // 	return col.EnsureIndex(index)
 // }
 
-// Where start generating query
-func (db *DB) Where(q bson.M) *Query {
+// Find start generating query
+func (db *DB) Find(q bson.M) *Query {
 	d := new(DB)
 	d.Session = db.Session.Clone()
 	d.Database = db.Database
@@ -88,7 +101,7 @@ func (db *DB) Where(q bson.M) *Query {
 }
 
 // Get a model with id
-func (db *DB) Get(model, id interface{}) error {
+func (db *DB) FindByID(model, id interface{}) error {
 	if val, ok := id.(string); ok {
 		id = bson.ObjectIdHex(val)
 	}
@@ -111,30 +124,26 @@ func (db *DB) Update(model interface{}) error {
 		return err
 	}
 	query := bson.M{"_id": id}
-	fieldsUpdate := parseBson(model)
+	fieldsUpdate, err := parseBson(model)
+	if err != nil {
+		return err
+	}
 	if err := col.Update(query, bson.M{"$set": fieldsUpdate}); err != nil {
 		return err
 	}
-	return db.Get(model, id)
+	return db.FindByID(model, id)
 }
 
 // --------------------- in package ---------------
 
-func parseBson(model interface{}) bson.M {
-	b, _ := bson.Marshal(model)
+func parseBson(model interface{}) (bson.M, error) {
+	b, err := bson.Marshal(model)
+	if err != nil {
+		return bson.M{}, err
+	}
 	var body bson.M
 	bson.Unmarshal(b, &body)
-	return body
-}
-
-func parseURI(uri string) (string, string, error) {
-	var url, db string
-	splited := strings.Split(uri, "/")
-	if len(splited) < 2 {
-		return url, db, ErrorURI
-	}
-	url, db = splited[0], splited[1]
-	return url, db, nil
+	return body, nil
 }
 
 func setID(model interface{}) {

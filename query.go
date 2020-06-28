@@ -55,8 +55,8 @@ func (q *Query) Limit(limit int) *Query {
 	return q
 }
 
-// Find the result on type
-func (q *Query) Find(model interface{}) error {
+// Load the result on type
+func (q *Query) Load(model interface{}) error {
 	query := q.parseQuery()
 	q.loadQuerySet(model, query)
 	return q.result(model)
